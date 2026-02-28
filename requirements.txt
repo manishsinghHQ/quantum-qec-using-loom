@@ -2,4 +2,8 @@ streamlit==1.32.2
 numpy
 matplotlib
 loom
+<<<<<<< HEAD
 fabric==1.15.0
+=======
+fabric==1.15.0
+>>>>>>> e8942c6731f46e3381952f3a32a89dbdd262d513
