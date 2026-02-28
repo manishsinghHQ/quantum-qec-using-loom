@@ -1,34 +1,49 @@
-import streamlit as st
-import numpy as np
+from qiskit import QuantumCircuit
+from qiskit_aer import AerSimulator
+from qiskit.visualization import plot_histogram
 import matplotlib.pyplot as plt
-from simulator import run_simulation, single_trial
+import streamlit as st
+# ---------------------------------
+# 1. Create Quantum Circuit
+# 3 qubits + 1 classical bit
+# ---------------------------------
+qc = QuantumCircuit(3, 1)
 
-st.set_page_config(page_title="Quantum QEC with Loom")
+# ---------------------------------
+# 2. Encode Logical Qubit
+# |ψ⟩ → |ψψψ⟩
+# ---------------------------------
+qc.cx(0, 1)
+qc.cx(0, 2)
 
-st.title("Quantum Error Correction Simulator (with Loom)")
+# ---------------------------------
+# 3. Inject Bit-Flip Error (X)
+# Simulate error on qubit 1
+# ---------------------------------
+qc.x(1)   # Comment this line to test "no error"
 
-st.markdown("""
-This application demonstrates **3-qubit Bit-Flip Quantum Error Correction**
-using **Python, Loom for experiment orchestration, and Streamlit for visualization**.
-""")
+# ---------------------------------
+# 4. Decode & Correct Error
+# ---------------------------------
+qc.cx(0, 1)
+qc.cx(0, 2)
+qc.ccx(1, 2, 0)  # Majority vote correction
 
-error_prob = st.slider("Bit-flip error probability", 0.0, 1.0, 0.1)
-trials = st.slider("Number of trials", 10, 500, 100)
+# ---------------------------------
+# 5. Measure Logical Qubit
+# ---------------------------------
+qc.measure(0, 0)
 
-initial_state = np.array([1, 0])  # |0>
+# ---------------------------------
+# 6. Run on Simulator
+# ---------------------------------
+backend = AerSimulator()
+result = backend.run(qc, shots=1024).result()
+counts = result.get_counts()
 
-if st.button("Run Simulation"):
-    single = single_trial(initial_state, error_prob)
-    success_rate = run_simulation(initial_state, error_prob, trials)
-
-    st.subheader("Single Trial")
-    st.write("Error positions:", single["errors"])
-    st.write("Correction success:", single["success"])
-
-    st.subheader("Batch Statistics (Loom)")
-    st.write(f"Success rate over {trials} trials: **{success_rate:.2f}**")
-
-    fig, ax = plt.subplots()
-    ax.bar(["Success", "Failure"], [success_rate, 1 - success_rate])
-    ax.set_ylabel("Probability")
-    st.pyplot(fig)
+# ---------------------------------
+# 7. Display Results
+# ---------------------------------
+print("Measurement Counts:", counts)
+fig = plot_histogram(counts)
+st.pyplot(fig)
